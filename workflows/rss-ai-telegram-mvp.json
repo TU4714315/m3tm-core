@@ -1,0 +1,55 @@
+{
+  "name": "M3TM RSS AI Telegram MVP",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [200,300]
+    },
+    {
+      "parameters": {
+        "url": "https://rss.nytimes.com/services/xml/rss/nyt/World.xml"
+      },
+      "id": "rss-read",
+      "name": "RSS Feed",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [450,300]
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => ({json:{title:item.json.title,link:item.json.link,summary:item.json.contentSnippet || ''}}));"
+      },
+      "id": "normalize",
+      "name": "Normalize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700,300]
+    },
+    {
+      "parameters": {
+        "chatId": "={{$env.TELEGRAM_CHAT_ID}}",
+        "text": "=🛰️ M3TM Alert\n\n{{$json.title}}\n\n{{$json.link}}"
+      },
+      "id": "telegram",
+      "name": "Telegram Alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [950,300]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [[{"node":"RSS Feed","type":"main","index":0}]]
+    },
+    "RSS Feed": {
+      "main": [[{"node":"Normalize","type":"main","index":0}]]
+    },
+    "Normalize": {
+      "main": [[{"node":"Telegram Alert","type":"main","index":0}]]
+    }
+  }
+}
