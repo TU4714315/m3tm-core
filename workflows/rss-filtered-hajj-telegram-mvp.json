@@ -1,0 +1,49 @@
+{
+  "name": "M3TM Filtered Hajj Telegram MVP",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://news.google.com/rss/search?q=(hajj%202026%20OR%20%D8%A7%D9%84%D8%AD%D8%AC%202026%20OR%20%D9%85%D9%83%D8%A9%20OR%20%D8%A7%D9%84%D9%85%D8%AF%D9%8A%D9%86%D8%A9%20OR%20%D8%A7%D9%84%D9%85%D8%B3%D8%AC%D8%AF%20%D8%A7%D9%84%D9%86%D8%A8%D9%88%D9%8A)&hl=ar&gl=SA&ceid=SA:ar"
+      },
+      "id": "rss-google-hajj",
+      "name": "Google News Hajj RSS",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const keywords = ['حج','الحج','مكة','المدينة','المسجد النبوي','المشاعر','الحجاج','معتمر','عمرة','وزارة الحج','hajj','makkah','madinah','medina','pilgrim','pilgrimage','hawza','حوزة','الحوزة','شيعة','shiite','shia','sufi','صوفي','iran','ايران','إيران','اردو','urdu'];\n\nreturn items\n  .map(item => {\n    const title = item.json.title || '';\n    const link = item.json.link || item.json.guid || '';\n    const summary = item.json.contentSnippet || item.json.content || '';\n    const text = `${title} ${summary}`.toLowerCase();\n    const matched = keywords.filter(k => text.includes(k.toLowerCase()));\n    return { json: { title, link, summary, matched_keywords: matched, relevance_score: matched.length } };\n  })\n  .filter(item => item.json.relevance_score > 0);"
+      },
+      "id": "filter-keywords",
+      "name": "Filter Relevant Items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "PUT_YOUR_CHAT_ID_HERE",
+        "text": "=🛰️ M3TM Relevant Alert\n\nTitle: {{$json.title}}\n\nScore: {{$json.relevance_score}}\nKeywords: {{$json.matched_keywords.join(', ')}}\n\nSummary:\n{{$json.summary}}\n\nLink:\n{{$json.link}}"
+      },
+      "id": "telegram-alert",
+      "name": "Telegram Alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [950, 300]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": { "main": [[{"node": "Google News Hajj RSS", "type": "main", "index": 0}]] },
+    "Google News Hajj RSS": { "main": [[{"node": "Filter Relevant Items", "type": "main", "index": 0}]] },
+    "Filter Relevant Items": { "main": [[{"node": "Telegram Alert", "type": "main", "index": 0}]] }
+  }
+}
